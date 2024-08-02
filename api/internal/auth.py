@@ -13,7 +13,7 @@ from dependencies import SOUVENIR_EMAIL, get_session
 from internal.mailer.mailer import Mailer, get_mailer
 from models import User, UserCreate
 from models.database import Token, TokenStatus
-from models.pydantic.auth import AuthIn, AuthOut
+from models.pydantic.auth import AuthIn, AuthOut, AuthVerifyIn
 
 JWT_EXPIRY_NB_DAYS = 3
 
@@ -92,6 +92,27 @@ class AuthManager:
             )
 
         self._send_welcome_email(db_user)
+
+    def post_verify(self, auth: AuthVerifyIn) -> AuthOut:
+        """Verify provided token and mark the user as verified."""
+
+        statement = (
+            select(Token).where(Token.name == "email").where(Token.token == auth.token)
+        )
+        db_token = self._session.exec(statement).first()
+
+        if not db_token or db_token.verified:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="token_not_found"
+            )
+
+        db_token.verified = True
+        db_token.updated_at = datetime.datetime.now(datetime.timezone.utc)
+
+        self._session.add(db_token)
+        self._session.commit()
+
+        return AuthOut(token=self._encode_jwt(db_token.user))
 
     def post_login(self, credentials: AuthIn) -> AuthOut:
         """Login user and return their authentication token."""
