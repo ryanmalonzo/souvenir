@@ -33,6 +33,7 @@ def upgrade() -> None:
     op.create_table('token',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.Enum('email', 'password_reset', name='tokenstatus'), nullable=True),
+    sa.Column('token', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),

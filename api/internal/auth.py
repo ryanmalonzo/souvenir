@@ -1,5 +1,6 @@
 import datetime
 import os
+import secrets
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -11,6 +12,7 @@ from sqlmodel import Session, select
 from dependencies import SOUVENIR_EMAIL, get_session
 from internal.mailer.mailer import Mailer, get_mailer
 from models import User, UserCreate
+from models.database import Token, TokenStatus
 from models.pydantic.auth import AuthIn, AuthOut
 
 JWT_EXPIRY_NB_DAYS = 3
@@ -25,19 +27,50 @@ class AuthManager:
         self._session = session
         self._mailer = mailer
 
-    def _encode_jwt(self, user: User):
+    def _store_token_in_db(
+        self, user: User, token_name: TokenStatus, token: str
+    ) -> None:
+        if user.id is None:
+            raise ValueError("User must be saved in database before storing token")
+
+        user.tokens.append(Token(name=token_name, token=token, user_id=user.id))
+        self._session.add(user)
+        self._session.commit()
+
+    def _send_welcome_email(self, user: User) -> None:
+        """
+        Send a welcome email to the user with a link to verify their account.
+        """
+
+        token = secrets.token_urlsafe(32)
+
+        self._store_token_in_db(user, TokenStatus.email, token)
+
+        activation_url = (
+            f"{os.getenv('WEBAPP_URL')}/verify?token={token}&email={user.email}"
+        )
+
+        self._mailer.send_email(
+            "Verify your Souvenir account",
+            SOUVENIR_EMAIL,
+            user.email,
+            "welcome.html",
+            {"email": user.email, "activation_url": activation_url},
+        )
+
+    def _encode_jwt(self, user: User) -> str:
         return jwt.encode(
             {
                 "user_id": user.id,
                 "exp": datetime.datetime.now(tz=datetime.timezone.utc)
                 + datetime.timedelta(days=JWT_EXPIRY_NB_DAYS),
             },
-            os.environ.get("JWT_SECRET"),
+            os.getenv("JWT_SECRET"),
             algorithm="HS256",
         )
 
-    def post_register(self, user: UserCreate) -> AuthOut:
-        """Register a new user in database and return their authentication token."""
+    def post_register(self, user: UserCreate) -> None:
+        """Register a new user in database and send them an email to verify their account."""
 
         try:
             db_user = User.model_validate(
@@ -58,15 +91,7 @@ class AuthManager:
                 status_code=status.HTTP_409_CONFLICT, detail="email_already_registered"
             )
 
-        self._mailer.send_email(
-            "Welcome!",
-            SOUVENIR_EMAIL,
-            user.email,
-            "welcome.html",
-            {"email": user.email},
-        )
-
-        return AuthOut(token=self._encode_jwt(db_user))
+        self._send_welcome_email(db_user)
 
     def post_login(self, credentials: AuthIn) -> AuthOut:
         """Login user and return their authentication token."""

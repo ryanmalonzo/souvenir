@@ -7,11 +7,11 @@ from models.pydantic.auth import AuthIn, AuthOut
 router = APIRouter(tags=["auth"])
 
 
-@router.post("/register", response_model=AuthOut, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 def post_register(
     user: UserCreate, auth_manager: AuthManager = Depends(get_auth_manager)
 ):
-    """Register a new user in database and return their authentication token."""
+    """Register a new user in database and send them an email to verify their account."""
 
     return auth_manager.post_register(user)
 

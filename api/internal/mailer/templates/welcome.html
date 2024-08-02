@@ -12,14 +12,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to Your Todo App, {{ email }}!</h1>
-        <p>We're excited to have you on board. With Your Todo App, you'll be able to organize your tasks efficiently and boost your productivity.</p>
+        <h1>Welcome to Souvenir, {{ email }}!</h1>
+        <p>We're excited to have you on board. With Souvenir, you'll be able to organize your tasks efficiently and boost your productivity.</p>
         <p>To get started, please activate your account by clicking the button below:</p>
-        <p><a href="#" class="button">Activate Your Account</a></p>
+        <p><a href="{{ activation_url }}" class="button">Activate Your Account</a></p>
         <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-        <p>{{ activation_link }}</p>
-        <p>If you have any questions, feel free to reply to this email. We're here to help!</p>
-        <p>Best regards,<br>The Your Todo App Team</p>
+        <p>{{ activation_url }}</p>
+        <p>Best regards,<br>The Souvenir Team</p>
     </div>
 </body>
 </html>

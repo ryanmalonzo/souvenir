@@ -3,7 +3,7 @@ import os
 
 from sqlmodel import Session, create_engine
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 SOUVENIR_EMAIL = "hello@souvenir.app"
 
 if not DATABASE_URL:
