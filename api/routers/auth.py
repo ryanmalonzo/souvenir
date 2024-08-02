@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, status
 
 from internal.auth import AuthManager, get_auth_manager
-from models.auth import AuthIn, AuthOut
-from models.user import UserCreate
+from models import UserCreate
+from models.pydantic.auth import AuthIn, AuthOut
 
 router = APIRouter(tags=["auth"])
 

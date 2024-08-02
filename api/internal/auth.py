@@ -10,8 +10,8 @@ from sqlmodel import Session, select
 
 from dependencies import SOUVENIR_EMAIL, get_session
 from internal.mailer.mailer import Mailer, get_mailer
-from models.auth import AuthIn, AuthOut
-from models.user import User, UserCreate
+from models import User, UserCreate
+from models.pydantic.auth import AuthIn, AuthOut
 
 JWT_EXPIRY_NB_DAYS = 3
 
