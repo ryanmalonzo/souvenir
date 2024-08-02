@@ -8,7 +8,8 @@ from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from dependencies import get_session
+from dependencies import SOUVENIR_EMAIL, get_session
+from internal.mailer.mailer import Mailer, get_mailer
 from models.auth import AuthIn, AuthOut
 from models.user import User, UserCreate
 
@@ -16,8 +17,13 @@ JWT_EXPIRY_NB_DAYS = 3
 
 
 class AuthManager:
-    def __init__(self, session: Session = Depends(get_session)):
+    def __init__(
+        self,
+        session: Session = Depends(get_session),
+        mailer: Mailer = Depends(get_mailer),
+    ):
         self._session = session
+        self._mailer = mailer
 
     def _encode_jwt(self, user: User):
         return jwt.encode(
@@ -52,6 +58,14 @@ class AuthManager:
                 status_code=status.HTTP_409_CONFLICT, detail="email_already_registered"
             )
 
+        self._mailer.send_email(
+            "Welcome!",
+            SOUVENIR_EMAIL,
+            user.email,
+            "welcome.html",
+            {"email": user.email},
+        )
+
         return AuthOut(token=self._encode_jwt(db_user))
 
     def post_login(self, credentials: AuthIn) -> AuthOut:
@@ -70,5 +84,7 @@ class AuthManager:
         return AuthOut(token=self._encode_jwt(db_user))
 
 
-def get_auth_manager(session: Session = Depends(get_session)) -> AuthManager:
-    return AuthManager(session)
+def get_auth_manager(
+    session: Session = Depends(get_session), mailer: Mailer = Depends(get_mailer)
+) -> AuthManager:
+    return AuthManager(session, mailer)
